@@ -16,12 +16,29 @@ func main() {
 	}
 }
 
-// TODO add tests on the HTTP or DB layer? (also that set?a= deletes the value)
-// TODO encapsulate state so we can then refactor it to write to a file
-// TODO should I allow setting it to nothing? or rather expect a DELETE
 // TODO read up on new http pattern changes
+// TODO add tests on the HTTP or DB layer? (also that set?a= deletes the value)
+// TODO should I allow setting it to nothing? or rather expect a DELETE
+
+type db struct {
+	state map[string]string
+}
+
+func newDB() *db {
+	return &db{state: make(map[string]string)}
+}
+
+func (d *db) set(k, v string) {
+	d.state[k] = v
+}
+
+func (d *db) get(k string) (string, bool) {
+	v, ok := d.state[k]
+	return v, ok
+}
+
 func run(w io.Writer) error {
-	dbState := make(map[string]string)
+	db := newDB()
 	logger := slog.New(slog.NewTextHandler(w, nil))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +56,7 @@ func run(w io.Writer) error {
 			return
 		}
 
-		dbState[k] = values[0]
+		db.set(k, values[0])
 	})
 	mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
@@ -56,7 +73,7 @@ func run(w io.Writer) error {
 			return
 		}
 
-		v, ok := dbState[k]
+		v, ok := db.get(k)
 
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
