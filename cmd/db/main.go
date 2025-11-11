@@ -18,7 +18,6 @@ func main() {
 	}
 }
 
-// TODO read up on new http pattern changes
 // TODO add slog middleware to log requests
 // TODO implement DB.Delete? and HTTP delete?
 
@@ -26,7 +25,7 @@ func run(w io.Writer) error {
 	database := db.New()
 	logger := slog.New(slog.NewTextHandler(w, nil))
 	mux := http.NewServeMux()
-	mux.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /set", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		logger.Info("/set", slog.String("method", r.Method), slog.Any("query", query))
 		if len(query) != 1 {
@@ -43,7 +42,7 @@ func run(w io.Writer) error {
 
 		database.Set(k, values[0])
 	})
-	mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		logger.Info("/get", slog.String("method", r.Method), slog.Any("query", query))
 		if len(query) != 1 {
