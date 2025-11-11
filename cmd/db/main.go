@@ -18,16 +18,13 @@ func main() {
 	}
 }
 
-// TODO add slog middleware to log requests
 // TODO implement DB.Delete? and HTTP delete?
-
 func run(w io.Writer) error {
 	database := db.New()
 	logger := slog.New(slog.NewTextHandler(w, nil))
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /set", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		logger.Info("/set", slog.String("method", r.Method), slog.Any("query", query))
 		if len(query) != 1 {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "must set exactly one key using /set?somekey=somevalue")
@@ -44,7 +41,6 @@ func run(w io.Writer) error {
 	})
 	mux.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		logger.Info("/get", slog.String("method", r.Method), slog.Any("query", query))
 		if len(query) != 1 {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "must get exactly one key using /get?somekey")
@@ -67,7 +63,7 @@ func run(w io.Writer) error {
 	})
 	srv := http.Server{
 		Addr:    "127.0.0.1:4000",
-		Handler: mux,
+		Handler: log(logger, mux),
 	}
 	logger.Info("Listening", "Addr", srv.Addr)
 	return srv.ListenAndServe()
@@ -78,4 +74,11 @@ func getKeyValue(query url.Values) (string, []string) {
 		return k, v
 	}
 	return "", nil
+}
+
+func log(logger *slog.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Request", slog.String("path", r.URL.Path), slog.String("method", r.Method), slog.Any("query", r.URL.Query()))
+		next.ServeHTTP(w, r)
+	})
 }
