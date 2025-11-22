@@ -18,7 +18,6 @@ func main() {
 	}
 }
 
-// TODO implement DB.Delete? and HTTP delete?
 func run(w io.Writer) error {
 	database := db.New()
 	logger := slog.New(slog.NewTextHandler(w, nil))
